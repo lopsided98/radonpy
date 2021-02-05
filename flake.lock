@@ -17,16 +17,18 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1610041835,
-        "narHash": "sha256-WXWaMt8W746JDgLls4g3AfCuKbcQUNL/YjikJIgsCGQ=",
-        "owner": "NixOS",
+        "lastModified": 1612483052,
+        "narHash": "sha256-qj75uOEXA8KnF5+JkRGoNhPWHbhTjl8zo4QsuG1k5wM=",
+        "owner": "lopsided98",
         "repo": "nixpkgs",
-        "rev": "f211631c1cb3e94828c7650b5d12c1e5a89e0e16",
+        "rev": "b65b13fa8ce76c90be96cfd13f143021dd55a4fb",
         "type": "github"
       },
       "original": {
-        "id": "nixpkgs",
-        "type": "indirect"
+        "owner": "lopsided98",
+        "ref": "aioinflux-init",
+        "repo": "nixpkgs",
+        "type": "github"
       }
     },
     "root": {

@@ -2,13 +2,15 @@ import asyncio
 import datetime
 import logging
 import struct
+import time
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Optional, Type, TypeVar, Union, AsyncGenerator
+from typing import Optional, Type, TypeVar, Union, AsyncGenerator, List
 
 import bleak
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
+from bleak.backends.scanner import AdvertisementData
 
 _logger = logging.getLogger(__name__)
 
@@ -334,28 +336,39 @@ class RD200:
 
         self._recv_future: Optional[asyncio.Future] = None
 
+    async def __aenter__(self) -> 'RD200':
+        await self.connect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.disconnect()
+
     @classmethod
-    async def discover(cls, timeout: float = 5.0, adapter=None, **kwargs) -> AsyncGenerator['RD200', None]:
+    async def discover(cls, timeout: float = 5.0, adapter=None, **kwargs) -> AsyncGenerator[BLEDevice, None]:
         """
         Generator to discover RadonEye RD200 devices
-        :return: RadonEye objects
+        :return: BLEDevice objects
         """
 
         device_queue = asyncio.Queue()
 
-        def detection_callback(d: BLEDevice, _):
-            if RD200.LBS_UUID_SERVICE in d.metadata['uuids']:
-                device_queue.put_nowait(cls(d))
+        def detection_callback(d: BLEDevice, ad: Optional[AdvertisementData]):
+            # Detection callback won't work right until https://github.com/hbldh/bleak/issues/395 is fixed
+            if 'uuids' in d.metadata:
+                uuids = d.metadata['uuids']
+            elif ad is not None:
+                uuids = ad.service_uuids
+            else:
+                return
+            if RD200.LBS_UUID_SERVICE in uuids:
+                device_queue.put_nowait(d)
 
         async with bleak.BleakScanner(detection_callback=detection_callback, adapter=adapter, **kwargs) as scanner:
-            # Bleak ignores devices that are already connected and responds to
-            # bug reports with "you're holding it wrong". This hack works
-            # around the bug.
-            scanner._devices.update(scanner._cached_devices)
             for device in await scanner.get_discovered_devices():
                 detection_callback(device, None)
+            start_time = time.time()
             while True:
-                yield await device_queue.get()
+                yield await asyncio.wait_for(device_queue.get(), timeout - (time.time() - start_time))
 
     @property
     def address(self):
@@ -363,7 +376,7 @@ class RD200:
         return self.device.address
 
     @property
-    async def connected(self):
+    async def connected(self) -> bool:
         """Indicate whether the remote device is currently connected."""
         return await self.device.is_connected()
 
@@ -476,7 +489,7 @@ class RD200:
     async def log_info(self) -> LogInfo:
         return await self._request_packet(Command.EEPROM_LOG_INFO_QUERY, LogInfo)
 
-    async def get_log(self, timeout: float = 10.0):
+    async def get_log(self, timeout: float = 10.0) -> List[float]:
         log_info = await self.log_info
 
         log_buffer_len = log_info.data_no * 2

@@ -2,6 +2,7 @@
   description = "Tools to communicate with the RadonEye RD200 radon detector";
 
   inputs = {
+    nixpkgs.url = "github:lopsided98/nixpkgs/aioinflux-init";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
