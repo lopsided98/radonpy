@@ -322,12 +322,17 @@ class RD200:
     LBS_UUID_MEAS = '00001525-1212-efde-1523-785feabcd123'
     LBS_UUID_LOG = '00001526-1212-efde-1523-785feabcd123'
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, adapter=None, **kwargs):
         """
-        Initialization of an instance of a remote RadonEye
+        Initialization of an instance of a remote RadonEye RD200
         :param address_or_ble_device: The Bluetooth address of the BLE
         peripheral to connect to or the `BLEDevice` object representing it.
         """
+
+        # Can't pass adapter=None to BleakClient
+        if adapter is not None:
+            kwargs.update(adapter=adapter)
+
         self.device = bleak.BleakClient(*args, **kwargs)
 
         self._ctl: Optional[BleakGATTCharacteristic] = None
@@ -362,7 +367,11 @@ class RD200:
             if RD200.LBS_UUID_SERVICE in uuids:
                 device_queue.put_nowait(d)
 
-        async with bleak.BleakScanner(detection_callback=detection_callback, adapter=adapter, **kwargs) as scanner:
+        # Can't pass adapter=None to BleakScanner
+        if adapter is not None:
+            kwargs.update(adapter=adapter)
+
+        async with bleak.BleakScanner(detection_callback=detection_callback, **kwargs) as scanner:
             for device in await scanner.get_discovered_devices():
                detection_callback(device, None)
             start_time = time.time()
