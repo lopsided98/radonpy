@@ -144,7 +144,7 @@ async def run():
     logging.basicConfig(level=logging.WARNING)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--adapter', help="Name or address of Bluetooth adapter")
+    parser.add_argument('--adapter', default='hci0', help="Name or address of Bluetooth adapter")
     parser.add_argument('-a', '--address', help="Bluetooth address of RadonEye RD200 device")
     command_parsers = parser.add_subparsers(dest='command', required=True)
 

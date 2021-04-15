@@ -353,7 +353,6 @@ class RD200:
         device_queue = asyncio.Queue()
 
         def detection_callback(d: BLEDevice, ad: Optional[AdvertisementData]):
-            # Detection callback won't work right until https://github.com/hbldh/bleak/issues/395 is fixed
             if 'uuids' in d.metadata:
                 uuids = d.metadata['uuids']
             elif ad is not None:
@@ -365,7 +364,7 @@ class RD200:
 
         async with bleak.BleakScanner(detection_callback=detection_callback, adapter=adapter, **kwargs) as scanner:
             for device in await scanner.get_discovered_devices():
-                detection_callback(device, None)
+               detection_callback(device, None)
             start_time = time.time()
             while True:
                 yield await asyncio.wait_for(device_queue.get(), timeout - (time.time() - start_time))
