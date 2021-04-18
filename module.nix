@@ -126,6 +126,8 @@ in {
         Type = "exec";
         User = "radonpy";
         Group = "radonpy";
+        Restart = "always";
+        RestartSec = 5;
         ExecStart = lib.escapeShellArgs ([
           "${radonpy}/bin/radonpy"
         ] ++ lib.optionals (cfg.adapter != null) [
@@ -143,6 +145,10 @@ in {
           "--tls-key" "${cfg.influxdb.tlsKey}"
         ] ++ lib.concatMap (f: [ "--exclude-field" f ])
           cfg.influxdb.excludeFields);
+      };
+      unitConfig = {
+        StartLimitBurst = 5;
+        StartLimitIntervalSec = 150;
       };
     };
   };
