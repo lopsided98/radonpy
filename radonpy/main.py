@@ -105,36 +105,26 @@ async def run_influxdb_import_log(device: radonpy.RD200, client: aioinflux.Influ
 async def run_influxdb_normal(args, device: radonpy.RD200, client: aioinflux.InfluxDBClient, tags: dict):
     next_time = time.time()
     while True:
-        measurement = None
-        try:
-            if not await device.connected:
-                # Needed to clean up some things from the previous connection
-                await device.disconnect()
-                await device.connect()
-            measurement = await device.measurement
-        # bleak has poor exception handling, so pretty much anything can be thrown
-        except BaseException as e:
-            _logger.error("failed to read radon measurement", exc_info=e)
+        measurement = await device.measurement
 
-        if measurement is not None:
-            fields = {
-                'current_value': measurement.read_value,
-                'day_value': measurement.day_value,
-                'month_value': measurement.month_value,
-                'pulse_count': measurement.pulse_count,
-                'pulse_count_10_min': measurement.pulse_count_10_min
-            }
-            for field in args.exclude_field:
-                fields.pop(field, None)
-            try:
-                await client.write({
-                    'time': '',
-                    'measurement': 'radon',
-                    'tags': tags,
-                    'fields': fields
-                })
-            except (aioinflux.InfluxDBWriteError, aiohttp.ClientError) as e:
-                _logger.error("failed to write to InfluxDB", exc_info=e)
+        fields = {
+            'current_value': measurement.read_value,
+            'day_value': measurement.day_value,
+            'month_value': measurement.month_value,
+            'pulse_count': measurement.pulse_count,
+            'pulse_count_10_min': measurement.pulse_count_10_min
+        }
+        for field in args.exclude_field:
+            fields.pop(field, None)
+        try:
+            await client.write({
+                'time': '',
+                'measurement': 'radon',
+                'tags': tags,
+                'fields': fields
+            })
+        except (aioinflux.InfluxDBWriteError, aiohttp.ClientError) as e:
+            _logger.error("failed to write to InfluxDB", exc_info=e)
 
         next_time += args.interval
         await asyncio.sleep(next_time - time.time())
