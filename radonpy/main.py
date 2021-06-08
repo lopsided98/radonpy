@@ -8,7 +8,7 @@ import ssl
 import sys
 import time
 import urllib.parse
-from typing import Optional, Union
+from typing import Mapping, MutableMapping, Optional, Tuple, Union
 
 import aiohttp
 import aioinflux
@@ -19,7 +19,7 @@ import radonpy
 _logger = logging.getLogger(__name__)
 
 
-async def run_measure(args, device: radonpy.RD200):
+async def run_measure(args: argparse.Namespace, device: radonpy.RD200) -> None:
     measurement = await device.measurement
     print(
         json.dumps(
@@ -34,16 +34,16 @@ async def run_measure(args, device: radonpy.RD200):
     )
 
 
-async def run_log(args, device: radonpy.RD200):
+async def run_log(args: argparse.Namespace, device: radonpy.RD200) -> None:
     print(json.dumps(await device.get_log()))
 
 
-async def run_config(args, device: radonpy.RD200):
+async def run_config(args: argparse.Namespace, device: radonpy.RD200) -> None:
     if args.unit:
         await device.set_unit(radonpy.Unit.PCI_L if args.unit == "pci" else radonpy.Unit.BQ_M3)
 
 
-async def run_influxdb(args, device: radonpy.RD200):
+async def run_influxdb(args: argparse.Namespace, device: radonpy.RD200) -> None:
     url = urllib.parse.urlsplit(args.url, scheme="", allow_fragments=False)
 
     if url.scheme == "http":
@@ -54,7 +54,7 @@ async def run_influxdb(args, device: radonpy.RD200):
         _logger.critical("invalid URL scheme: %s", url.scheme)
         sys.exit(2)
 
-    kwargs = {}
+    kwargs: MutableMapping[str, aiohttp.TCPConnector] = {}
 
     if args.tls_certificate is not None or args.tls_key is not None:
         if args.tls_certificate is None or args.tls_key is None:
@@ -93,15 +93,16 @@ async def run_influxdb(args, device: radonpy.RD200):
 
 
 async def run_influxdb_import_log(
-    device: radonpy.RD200, client: aioinflux.InfluxDBClient, tags: dict
-):
+    device: radonpy.RD200, client: aioinflux.InfluxDBClient, tags: Mapping[str, str]
+) -> None:
     log = await device.get_log()
 
     now = datetime.datetime.now(tz=datetime.timezone.utc)
 
-    def map_point(item):
-        i = item[0]
-        value = item[1]
+    def map_point(
+        item: Tuple[int, float]
+    ) -> Mapping[str, Union[Mapping[str, float], Mapping[str, str], str, datetime.datetime]]:
+        i, value = item
         delta = datetime.timedelta(hours=len(log) - i)
         return {
             "time": now - delta,
@@ -117,8 +118,11 @@ async def run_influxdb_import_log(
 
 
 async def run_influxdb_normal(
-    args, device: radonpy.RD200, client: aioinflux.InfluxDBClient, tags: dict
-):
+    args: argparse.Namespace,
+    device: radonpy.RD200,
+    client: aioinflux.InfluxDBClient,
+    tags: Mapping[str, str],
+) -> None:
     next_time = time.time()
     while True:
         measurement = await device.measurement
@@ -141,7 +145,7 @@ async def run_influxdb_normal(
         await asyncio.sleep(next_time - time.time())
 
 
-async def run():
+async def run() -> None:
     logging.basicConfig(level=logging.WARNING)
 
     parser = argparse.ArgumentParser()
@@ -211,5 +215,5 @@ async def run():
             await run_influxdb(args, device)
 
 
-def main():
+def main() -> None:
     asyncio.run(run())

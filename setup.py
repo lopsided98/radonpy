@@ -1,3 +1,6 @@
 from setuptools import setup
+from mypyc.build import mypycify
 
-setup()
+setup(
+    ext_modules=mypycify(["radonpy/__init__.py"]),
+)
