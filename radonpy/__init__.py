@@ -5,7 +5,7 @@ import struct
 import time
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Optional, Type, TypeVar, Union, AsyncGenerator, List
+from typing import Optional, Type, TypeVar, AsyncGenerator, List
 
 import bleak
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -106,9 +106,7 @@ class DateTimeSet:
     second: int
 
     def pack(self) -> bytes:
-        return bytes(
-            (self.year, self.month, self.day, self.hour, self.minute, self.second)
-        )
+        return bytes((self.year, self.month, self.day, self.hour, self.minute, self.second))
 
 
 @dataclass
@@ -377,9 +375,7 @@ class RD200:
         if adapter is not None:
             kwargs.update(adapter=adapter)
 
-        async with bleak.BleakScanner(
-            detection_callback=detection_callback, **kwargs
-        ) as scanner:
+        async with bleak.BleakScanner(detection_callback=detection_callback, **kwargs) as scanner:
             for device in await scanner.get_discovered_devices():
                 detection_callback(device, None)
             start_time = time.time()
@@ -497,23 +493,17 @@ class RD200:
 
     @property
     async def module_protection(self) -> ModuleProtection:
-        return await self._request_packet(
-            Command.MOD_PROTECTION_QUERY, ModuleProtection
-        )
+        return await self._request_packet(Command.MOD_PROTECTION_QUERY, ModuleProtection)
 
     @property
     async def calibration_factor(self) -> float:
         return (
-            await self._request_packet(
-                Command.DISPLAY_CAL_FACTOR_QUERY, DisplayCalFactor
-            )
+            await self._request_packet(Command.DISPLAY_CAL_FACTOR_QUERY, DisplayCalFactor)
         ).factor
 
     @property
     async def product_process_mode(self) -> ProductProcessMode:
-        return await self._request_packet(
-            Command.PRODUCT_PROCESS_MODE_QUERY, ProductProcessMode
-        )
+        return await self._request_packet(Command.PRODUCT_PROCESS_MODE_QUERY, ProductProcessMode)
 
     @property
     async def log_info(self) -> LogInfo:
@@ -539,9 +529,7 @@ class RD200:
 
         log_data = []
         for i in range(log_info.data_no):
-            log_point_raw = int.from_bytes(
-                log_buffer[i * 2 : i * 2 + 2], byteorder="little"
-            )
+            log_point_raw = int.from_bytes(log_buffer[i * 2 : i * 2 + 2], byteorder="little")
             log_data.append(log_point_raw / 100.0)
 
         return log_data

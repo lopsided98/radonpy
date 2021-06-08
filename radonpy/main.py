@@ -40,9 +40,7 @@ async def run_log(args, device: radonpy.RD200):
 
 async def run_config(args, device: radonpy.RD200):
     if args.unit:
-        await device.set_unit(
-            radonpy.Unit.PCI_L if args.unit == "pci" else radonpy.Unit.BQ_M3
-        )
+        await device.set_unit(radonpy.Unit.PCI_L if args.unit == "pci" else radonpy.Unit.BQ_M3)
 
 
 async def run_influxdb(args, device: radonpy.RD200):
@@ -61,8 +59,8 @@ async def run_influxdb(args, device: radonpy.RD200):
     if args.tls_certificate is not None or args.tls_key is not None:
         if args.tls_certificate is None or args.tls_key is None:
             _logger.critical(
-                "--tls-certificate and --tls-key must all be specified to use client certificate "
-                "authentication"
+                "--tls-certificate and --tls-key must all be specified to use client"
+                " certificate authentication"
             )
             sys.exit(2)
         ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
@@ -135,9 +133,7 @@ async def run_influxdb_normal(
         for field in args.exclude_field:
             fields.pop(field, None)
         try:
-            await client.write(
-                {"time": "", "measurement": "radon", "tags": tags, "fields": fields}
-            )
+            await client.write({"time": "", "measurement": "radon", "tags": tags, "fields": fields})
         except (aioinflux.InfluxDBWriteError, aiohttp.ClientError) as e:
             _logger.error("failed to write to InfluxDB", exc_info=e)
 
@@ -150,14 +146,12 @@ async def run():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--adapter", help="Name or address of Bluetooth adapter")
-    parser.add_argument(
-        "-a", "--address", help="Bluetooth address of RadonEye RD200 device"
-    )
+    parser.add_argument("-a", "--address", help="Bluetooth address of RadonEye RD200 device")
     command_parsers = parser.add_subparsers(dest="command", required=True)
 
-    measure_parser = command_parsers.add_parser("measure")
+    command_parsers.add_parser("measure")
 
-    log_parser = command_parsers.add_parser("log")
+    command_parsers.add_parser("log")
 
     config_parser = command_parsers.add_parser("config")
     config_parser.add_argument(
@@ -178,12 +172,8 @@ async def run():
         help="Exclude a field from the InfluxDB measurement",
     )
     influxdb_parser.add_argument("--url", required=True, help="InfluxDB server URL")
-    influxdb_parser.add_argument(
-        "--database", default="radoneye", help="InfluxDB database"
-    )
-    influxdb_parser.add_argument(
-        "--username", default="radoneye", help="InfluxDB username"
-    )
+    influxdb_parser.add_argument("--database", default="radoneye", help="InfluxDB database")
+    influxdb_parser.add_argument("--username", default="radoneye", help="InfluxDB username")
     influxdb_parser.add_argument("--password", default="", help="InfluxDB password")
     influxdb_parser.add_argument(
         "--tls-certificate", help="InfluxDB client authentication certificate"
