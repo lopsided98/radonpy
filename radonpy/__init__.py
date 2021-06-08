@@ -18,27 +18,28 @@ _logger = logging.getLogger(__name__)
 class Command(IntEnum):
     MEAS_QUERY = 0x50
     BLE_STATUS_QUERY = 0x51
-    BLE_RD200_DATE_TIME_SET = 0xa1
-    BLE_RD200_UNIT_SET = 0xa2
-    SN_QUERY = 0xa4
-    SN_TYPE_QUERY = 0xa6
-    MODEL_NAME_RETURN = 0xa8
-    BLE_WARNING_SET = 0xaa
-    CONFIG_QUERY = 0xac
-    OLED_QUERY = 0xad  # Doesn't seem to work
-    BLE_VERSION_QUERY = 0xaf
-    MOD_CONFIG_QUERY = 0xb1
-    MOD_PROTECTION_RETURN = 0xb3
-    MOD_PROTECTION_QUERY = 0xb4
-    DISPLAY_CAL_FACTOR_QUERY = 0xbd
-    PRODUCT_PROCESS_MODE_QUERY = 0xc1
-    EEPROM_LONG_DATA_CLEAR = 0xe0
-    EEPROM_LOG_INFO_QUERY = 0xe8
-    EEPROM_LOG_DATA_SEND = 0xe9
+    BLE_RD200_DATE_TIME_SET = 0xA1
+    BLE_RD200_UNIT_SET = 0xA2
+    SN_QUERY = 0xA4
+    SN_TYPE_QUERY = 0xA6
+    MODEL_NAME_RETURN = 0xA8
+    BLE_WARNING_SET = 0xAA
+    CONFIG_QUERY = 0xAC
+    OLED_QUERY = 0xAD  # Doesn't seem to work
+    BLE_VERSION_QUERY = 0xAF
+    MOD_CONFIG_QUERY = 0xB1
+    MOD_PROTECTION_RETURN = 0xB3
+    MOD_PROTECTION_QUERY = 0xB4
+    DISPLAY_CAL_FACTOR_QUERY = 0xBD
+    PRODUCT_PROCESS_MODE_QUERY = 0xC1
+    EEPROM_LONG_DATA_CLEAR = 0xE0
+    EEPROM_LOG_INFO_QUERY = 0xE8
+    EEPROM_LOG_DATA_SEND = 0xE9
 
 
 class Unit(IntEnum):
     """pCi/L"""
+
     PCI_L = 0
     """Bq/m^3"""
     BQ_M3 = 1
@@ -69,7 +70,7 @@ class Measurement:
 
     @classmethod
     def unpack(cls, data: bytes):
-        return cls(*struct.unpack('<fffHH', data))
+        return cls(*struct.unpack("<fffHH", data))
 
 
 _register_packet(Measurement)
@@ -87,7 +88,7 @@ class Status:
 
     @classmethod
     def unpack(cls, data: bytes):
-        return cls(*struct.unpack('<BBIIf', data))
+        return cls(*struct.unpack("<BBIIf", data))
 
 
 _register_packet(Status)
@@ -105,7 +106,9 @@ class DateTimeSet:
     second: int
 
     def pack(self) -> bytes:
-        return bytes((self.year, self.month, self.day, self.hour, self.minute, self.second))
+        return bytes(
+            (self.year, self.month, self.day, self.hour, self.minute, self.second)
+        )
 
 
 @dataclass
@@ -127,8 +130,8 @@ class Serial:
 
     @classmethod
     def unpack(cls, data: bytes):
-        date = data[:8].decode('utf-8')
-        serial = data[8:].decode('utf-8')
+        date = data[:8].decode("utf-8")
+        serial = data[8:].decode("utf-8")
         return cls(date, serial)
 
 
@@ -143,7 +146,7 @@ class SNType:
 
     @classmethod
     def unpack(cls, data: bytes):
-        return cls(data[:3].decode('utf-8'))
+        return cls(data[:3].decode("utf-8"))
 
 
 _register_packet(SNType)
@@ -161,7 +164,7 @@ class ModelName:
 
     @classmethod
     def unpack(cls, data: bytes):
-        return cls(data[0], data[1:].decode('utf-8'))
+        return cls(data[0], data[1:].decode("utf-8"))
 
 
 _register_packet(ModelName)
@@ -190,7 +193,7 @@ class Config:
 
     @classmethod
     def unpack(cls, data: bytes):
-        fields = struct.unpack('<BBfB', data)
+        fields = struct.unpack("<BBfB", data)
         unit = Unit(fields[0])
         interval = AlarmInterval(fields[3])
         return cls(unit, *fields[1:3], interval)
@@ -207,7 +210,7 @@ class OLEDConfig:
 
     @classmethod
     def unpack(cls, data: bytes):
-        return cls(*struct.unpack('<I', data))
+        return cls(*struct.unpack("<I", data))
 
 
 _register_packet(OLEDConfig)
@@ -222,9 +225,9 @@ class FirmwareInfo:
 
     @classmethod
     def unpack(cls, data: bytes):
-        version = data[:64].decode('utf-8')
+        version = data[:64].decode("utf-8")
         if len(data) >= 64 + 4:
-            status = int.from_bytes(data[64:64 + 4], byteorder='little')
+            status = int.from_bytes(data[64 : 64 + 4], byteorder="little")
         else:
             status = 0
         return cls(version, status)
@@ -244,7 +247,7 @@ class ModuleConfig:
 
     @classmethod
     def unpack(cls, data: bytes):
-        return cls(*struct.unpack('<BIIf', data))
+        return cls(*struct.unpack("<BIIf", data))
 
 
 _register_packet(ModuleConfig)
@@ -259,7 +262,7 @@ class ModuleProtection:
 
     @classmethod
     def unpack(cls, data: bytes):
-        return cls(*struct.unpack('<II', data))
+        return cls(*struct.unpack("<II", data))
 
 
 _register_packet(ModuleProtection)
@@ -273,7 +276,7 @@ class DisplayCalFactor:
 
     @classmethod
     def unpack(cls, data: bytes):
-        return cls(*struct.unpack('<f', data))
+        return cls(*struct.unpack("<f", data))
 
 
 _register_packet(DisplayCalFactor)
@@ -289,7 +292,7 @@ class ProductProcessMode:
 
     @classmethod
     def unpack(cls, data: bytes):
-        return cls(*struct.unpack('<BBH', data))
+        return cls(*struct.unpack("<BBH", data))
 
 
 _register_packet(ProductProcessMode)
@@ -305,7 +308,7 @@ class LogInfo:
     @staticmethod
     def unpack(data: bytes):
         # Unknown extra data at the end
-        return LogInfo(*struct.unpack('<Hb', data[:3]))
+        return LogInfo(*struct.unpack("<Hb", data[:3]))
 
 
 _register_packet(LogInfo)
@@ -317,10 +320,11 @@ class RD200:
     lazy and just modified some example code without even bothering to change
     the UUIDs.
     """
-    LBS_UUID_SERVICE = '00001523-1212-efde-1523-785feabcd123'
-    LBS_UUID_CONTROL = '00001524-1212-efde-1523-785feabcd123'
-    LBS_UUID_MEAS = '00001525-1212-efde-1523-785feabcd123'
-    LBS_UUID_LOG = '00001526-1212-efde-1523-785feabcd123'
+
+    LBS_UUID_SERVICE = "00001523-1212-efde-1523-785feabcd123"
+    LBS_UUID_CONTROL = "00001524-1212-efde-1523-785feabcd123"
+    LBS_UUID_MEAS = "00001525-1212-efde-1523-785feabcd123"
+    LBS_UUID_LOG = "00001526-1212-efde-1523-785feabcd123"
 
     def __init__(self, *args, adapter=None, **kwargs):
         """
@@ -341,7 +345,7 @@ class RD200:
 
         self._recv_future: Optional[asyncio.Future] = None
 
-    async def __aenter__(self) -> 'RD200':
+    async def __aenter__(self) -> "RD200":
         await self.connect()
         return self
 
@@ -349,7 +353,9 @@ class RD200:
         await self.disconnect()
 
     @classmethod
-    async def discover(cls, timeout: float = 5.0, adapter=None, **kwargs) -> AsyncGenerator[BLEDevice, None]:
+    async def discover(
+        cls, timeout: float = 5.0, adapter=None, **kwargs
+    ) -> AsyncGenerator[BLEDevice, None]:
         """
         Generator to discover RadonEye RD200 devices
         :return: BLEDevice objects
@@ -358,8 +364,8 @@ class RD200:
         device_queue = asyncio.Queue()
 
         def detection_callback(d: BLEDevice, ad: Optional[AdvertisementData]):
-            if 'uuids' in d.metadata:
-                uuids = d.metadata['uuids']
+            if "uuids" in d.metadata:
+                uuids = d.metadata["uuids"]
             elif ad is not None:
                 uuids = ad.service_uuids
             else:
@@ -371,12 +377,16 @@ class RD200:
         if adapter is not None:
             kwargs.update(adapter=adapter)
 
-        async with bleak.BleakScanner(detection_callback=detection_callback, **kwargs) as scanner:
+        async with bleak.BleakScanner(
+            detection_callback=detection_callback, **kwargs
+        ) as scanner:
             for device in await scanner.get_discovered_devices():
-               detection_callback(device, None)
+                detection_callback(device, None)
             start_time = time.time()
             while True:
-                yield await asyncio.wait_for(device_queue.get(), timeout - (time.time() - start_time))
+                yield await asyncio.wait_for(
+                    device_queue.get(), timeout - (time.time() - start_time)
+                )
 
     @property
     def address(self):
@@ -433,8 +443,12 @@ class RD200:
     async def set_unit(self, unit):
         await self._send_packet(UnitSet(unit))
 
-    async def alarm(self, enabled: Optional[bool] = None, value: Optional[float] = None,
-                    interval: Optional[AlarmInterval] = None):
+    async def alarm(
+        self,
+        enabled: Optional[bool] = None,
+        value: Optional[float] = None,
+        interval: Optional[AlarmInterval] = None,
+    ):
         if enabled is None or value is None or interval is None:
             config = await self.config
             if enabled is None:
@@ -483,15 +497,23 @@ class RD200:
 
     @property
     async def module_protection(self) -> ModuleProtection:
-        return await self._request_packet(Command.MOD_PROTECTION_QUERY, ModuleProtection)
+        return await self._request_packet(
+            Command.MOD_PROTECTION_QUERY, ModuleProtection
+        )
 
     @property
     async def calibration_factor(self) -> float:
-        return (await self._request_packet(Command.DISPLAY_CAL_FACTOR_QUERY, DisplayCalFactor)).factor
+        return (
+            await self._request_packet(
+                Command.DISPLAY_CAL_FACTOR_QUERY, DisplayCalFactor
+            )
+        ).factor
 
     @property
     async def product_process_mode(self) -> ProductProcessMode:
-        return await self._request_packet(Command.PRODUCT_PROCESS_MODE_QUERY, ProductProcessMode)
+        return await self._request_packet(
+            Command.PRODUCT_PROCESS_MODE_QUERY, ProductProcessMode
+        )
 
     @property
     async def log_info(self) -> LogInfo:
@@ -505,7 +527,7 @@ class RD200:
         log_buffer = bytearray()
 
         def log_data_callback(_sender, data):
-            _logger.debug(f'<-- (LOG) {data.hex()}')
+            _logger.debug(f"<-- (LOG) {data.hex()}")
             log_buffer.extend(data)
             if len(log_buffer) >= log_buffer_len:
                 log_buffer_done.set()
@@ -517,14 +539,16 @@ class RD200:
 
         log_data = []
         for i in range(log_info.data_no):
-            log_point_raw = int.from_bytes(log_buffer[i * 2: i * 2 + 2], byteorder='little')
+            log_point_raw = int.from_bytes(
+                log_buffer[i * 2 : i * 2 + 2], byteorder="little"
+            )
             log_data.append(log_point_raw / 100.0)
 
         return log_data
 
     async def _send_command(self, command: Command):
         buffer = bytearray((command,))
-        _logger.debug(f'--> (CTL) {buffer.hex()}')
+        _logger.debug(f"--> (CTL) {buffer.hex()}")
         await self.device.write_gatt_char(self._ctl, buffer)
 
     async def _send_packet(self, packet):
@@ -533,14 +557,18 @@ class RD200:
         data = packet.pack()
         buffer.append(len(data))
         buffer.extend(data)
-        _logger.debug(f'--> (CTL) {buffer.hex()}')
+        _logger.debug(f"--> (CTL) {buffer.hex()}")
 
         await self.device.write_gatt_char(self._ctl, buffer)
 
-    P = TypeVar('P')
+    P = TypeVar("P")
 
-    async def _request_packet(self, command: Command, response_type: Optional[Type[P]] = None,
-                              timeout: Optional[float] = None) -> P:
+    async def _request_packet(
+        self,
+        command: Command,
+        response_type: Optional[Type[P]] = None,
+        timeout: Optional[float] = None,
+    ) -> P:
         recv_future = asyncio.Future()
 
         def meas_callback(_sender, data):
@@ -564,7 +592,9 @@ class RD200:
 
         return self._parse_packet(buffer)
 
-    async def _recv_packet(self, packet_type: Optional[Type[P]] = None, timeout: Optional[float] = None) -> P:
+    async def _recv_packet(
+        self, packet_type: Optional[Type[P]] = None, timeout: Optional[float] = None
+    ) -> P:
         recv_future = asyncio.Future()
 
         def meas_callback(_sender, data):
@@ -581,8 +611,8 @@ class RD200:
     def _parse_packet(self, buffer: bytearray, packet_type: Optional[Type[P]] = None):
         command = buffer[0]
         length = buffer[1]
-        data = buffer[2:2 + length]
-        _logger.debug(f'<-- (MEAS) {buffer[:2 + length].hex()}')
+        data = buffer[2 : 2 + length]
+        _logger.debug(f"<-- (MEAS) {buffer[:2 + length].hex()}")
 
         if packet_type and packet_type.RECV_COMMAND != command:
             raise TypeError("Wrong packet type received")
