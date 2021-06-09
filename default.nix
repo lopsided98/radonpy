@@ -1,18 +1,24 @@
-{ lib, fetchFromGitHub, buildPythonApplication, black, flake8, bleak
-, aioinflux }:
+{ lib, fetchFromGitHub, buildPythonApplication, python, aioinflux, bleak, black
+, flake8, mypy }:
 
-buildPythonApplication {
+buildPythonApplication rec {
   pname = "radonpy";
   version = "0.1.0";
 
   src = ./.;
 
-  nativeBuildInputs = [ black flake8 ];
-  propagatedBuildInputs = [ bleak aioinflux ];
+  propagatedBuildInputs = [ aioinflux bleak ];
 
-  preCheck = ''
+  checkInputs = [ black flake8 mypy ];
+
+  preCheck = let
+    # mypy only supports packages in the interpreter site-packages directory
+    # https://github.com/python/mypy/issues/5701
+    env = python.withPackages (p: propagatedBuildInputs);
+  in ''
     black --check .
     flake8
+    mypy --python-executable '${env.interpreter}' radonpy
   '';
 
   meta = with lib; {

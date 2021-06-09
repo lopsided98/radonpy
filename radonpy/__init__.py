@@ -9,8 +9,7 @@ import time
 from dataclasses import dataclass
 from enum import IntEnum
 from types import TracebackType
-from typing import (AsyncGenerator, Optional, Sequence, Type, TypeVar, cast,
-                    overload)
+from typing import AsyncGenerator, Optional, Sequence, Type, TypeVar, cast, overload
 
 import bleak
 from bleak.backends.characteristic import BleakGATTCharacteristic

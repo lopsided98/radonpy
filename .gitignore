@@ -1,5 +1,6 @@
 /.idea/
 /build/
+/result*
 *.pyc
 *.egg-info/
 *.so
