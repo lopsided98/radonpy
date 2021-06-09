@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import asyncio
 import datetime
@@ -7,7 +9,8 @@ import time
 from dataclasses import dataclass
 from enum import IntEnum
 from types import TracebackType
-from typing import AsyncGenerator, Optional, Sequence, Type, TypeVar, cast, overload
+from typing import (AsyncGenerator, Optional, Sequence, Type, TypeVar, cast,
+                    overload)
 
 import bleak
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -384,7 +387,7 @@ class RD200:
         :return: BLEDevice objects
         """
 
-        device_queue = asyncio.Queue[BLEDevice]()
+        device_queue: asyncio.Queue[BLEDevice] = asyncio.Queue()
 
         def detection_callback(d: BLEDevice, ad: Optional[AdvertisementData]) -> None:
             if "uuids" in d.metadata:
@@ -601,7 +604,7 @@ class RD200:
         response_type: Optional[Type[R]] = None,
         timeout: Optional[float] = None,
     ) -> RecvPacket:
-        recv_future = asyncio.Future[bytearray]()
+        recv_future: asyncio.Future[bytearray] = asyncio.Future()
 
         def meas_callback(_sender: int, data: bytearray) -> None:
             if not recv_future.done():
@@ -637,7 +640,7 @@ class RD200:
     async def _recv_packet(
         self, packet_type: Optional[Type[R]] = None, timeout: Optional[float] = None
     ) -> RecvPacket:
-        recv_future = asyncio.Future[bytearray]()
+        recv_future: asyncio.Future[bytearray] = asyncio.Future()
 
         def meas_callback(_sender: int, data: bytearray) -> None:
             recv_future.set_result(data)
