@@ -403,7 +403,7 @@ class RD200:
             kwargs.update(adapter=adapter)
 
         async with bleak.BleakScanner(detection_callback=detection_callback, **kwargs) as scanner:
-            for device in await scanner.get_discovered_devices():
+            for device in scanner.discovered_devices:
                 detection_callback(device, None)
             start_time = time.time()
             while True:
