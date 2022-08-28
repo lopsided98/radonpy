@@ -42,8 +42,11 @@ class Command(IntEnum):
 
 
 class Unit(IntEnum):
-    PCI_L = 0, """pCi/L"""
-    BQ_M3 = 1, """Bq/m^3"""
+    PCI_L = 0
+    """pCi/L"""
+
+    BQ_M3 = (1,)
+    """Bq/m^3"""
 
 
 class AlarmInterval(IntEnum):
