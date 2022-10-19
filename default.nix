@@ -11,14 +11,10 @@ buildPythonApplication rec {
 
   checkInputs = [ black flake8 mypy ];
 
-  preCheck = let
-    # mypy only supports packages in the interpreter site-packages directory
-    # https://github.com/python/mypy/issues/5701
-    env = python.withPackages (p: propagatedBuildInputs);
-  in ''
+  preCheck = ''
     black --check .
     flake8
-    mypy --python-executable '${env.interpreter}' radonpy
+    mypy radonpy
   '';
 
   meta = with lib; {

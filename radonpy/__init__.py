@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass
 from enum import IntEnum
 from types import TracebackType
-from typing import AsyncGenerator, Optional, Sequence, Type, TypeVar, cast, overload
+from typing import Any, AsyncGenerator, Optional, Sequence, Type, TypeVar, overload
 
 import bleak
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -17,6 +17,11 @@ from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
 _logger = logging.getLogger(__name__)
+
+
+class NotConnectedError(RuntimeError):
+    def __init__(self) -> None:
+        super().__init__("Not connected to device")
 
 
 class Command(IntEnum):
@@ -348,18 +353,17 @@ class RD200:
     LBS_UUID_MEAS = "00001525-1212-efde-1523-785feabcd123"
     LBS_UUID_LOG = "00001526-1212-efde-1523-785feabcd123"
 
-    def __init__(self, *args: object, adapter: Optional[str] = None, **kwargs: object):
+    def __init__(self, device: BLEDevice, adapter: Optional[str] = None, **kwargs: Any):
         """
         Initialization of an instance of a remote RadonEye RD200
-        :param address_or_ble_device: The Bluetooth address of the BLE
-        peripheral to connect to or the `BLEDevice` object representing it.
+        :param device: The `BLEDevice` object representing the RD200 device.
         """
 
         # Can't pass adapter=None to BleakClient
         if adapter is not None:
             kwargs.update(adapter=adapter)
 
-        self.device = bleak.BleakClient(*args, **kwargs)
+        self.device = bleak.BleakClient(device, **kwargs)
 
         self._ctl: Optional[BleakGATTCharacteristic] = None
         self._meas: Optional[BleakGATTCharacteristic] = None
@@ -379,7 +383,7 @@ class RD200:
 
     @classmethod
     async def discover(
-        cls, timeout: float = 5.0, adapter: Optional[str] = None, **kwargs: object
+        cls, timeout: float = 5.0, adapter: Optional[str] = None, **kwargs: Any
     ) -> AsyncGenerator[BLEDevice, None]:
         """
         Generator to discover RadonEye RD200 devices
@@ -414,12 +418,12 @@ class RD200:
     @property
     def address(self) -> str:
         """Read the device's Bluetooth address"""
-        return cast(str, self.device.address)
+        return self.device.address
 
     @property
-    async def connected(self) -> bool:
+    def connected(self) -> bool:
         """Indicate whether the remote device is currently connected."""
-        return cast(bool, await self.device.is_connected())
+        return self.device.is_connected
 
     async def connect(self) -> bool:
         """
@@ -428,18 +432,27 @@ class RD200:
         if not await self.device.connect():
             return False
 
-        service = (await self.device.get_services()).get_service(self.LBS_UUID_SERVICE)
+        service = self.device.services.get_service(self.LBS_UUID_SERVICE)
+        if not service:
+            await self.disconnect()
+            return False
         self._ctl = service.get_characteristic(self.LBS_UUID_CONTROL)
         self._meas = service.get_characteristic(self.LBS_UUID_MEAS)
         self._log = service.get_characteristic(self.LBS_UUID_LOG)
 
+        if self._ctl is None or self._meas is None or self._log is None:
+            await self.disconnect()
+            return False
         return True
 
     async def disconnect(self) -> bool:
         """
         Disconnect from the RadonEye device.
         """
-        return cast(bool, await self.device.disconnect())
+        self._ctl = None
+        self._meas = None
+        self._log = None
+        return await self.device.disconnect()
 
     @property
     async def measurement(self) -> Measurement:
@@ -540,13 +553,16 @@ class RD200:
         return await self._request_packet(Command.EEPROM_LOG_INFO_QUERY, LogInfo)
 
     async def get_log(self, timeout: float = 10.0) -> Sequence[float]:
+        if not self._log:
+            raise NotConnectedError()
+
         log_info = await self.log_info
 
         log_buffer_len = log_info.data_no * 2
         log_buffer_done = asyncio.Event()
         log_buffer = bytearray()
 
-        def log_data_callback(_sender: int, data: bytearray) -> None:
+        def log_data_callback(_sender: Any, data: bytearray) -> None:
             _logger.debug(f"<-- (LOG) {data.hex()}")
             log_buffer.extend(data)
             if len(log_buffer) >= log_buffer_len:
@@ -565,11 +581,17 @@ class RD200:
         return log_data
 
     async def _send_command(self, command: Command) -> None:
+        if not self._ctl:
+            raise NotConnectedError()
+
         buffer = bytearray((command,))
         _logger.debug(f"--> (CTL) {buffer.hex()}")
         await self.device.write_gatt_char(self._ctl, buffer)
 
     async def _send_packet(self, packet: SendPacket) -> None:
+        if not self._ctl:
+            raise NotConnectedError()
+
         buffer = bytearray()
         buffer.append(packet.SEND_COMMAND)
         data = packet.pack()
@@ -603,9 +625,12 @@ class RD200:
         response_type: Optional[Type[R]] = None,
         timeout: Optional[float] = None,
     ) -> RecvPacket:
+        if not self._meas:
+            raise NotConnectedError()
+
         recv_future: asyncio.Future[bytearray] = asyncio.Future()
 
-        def meas_callback(_sender: int, data: bytearray) -> None:
+        def meas_callback(_sender: Any, data: bytearray) -> None:
             if not recv_future.done():
                 recv_future.set_result(data)
             else:
@@ -639,9 +664,12 @@ class RD200:
     async def _recv_packet(
         self, packet_type: Optional[Type[R]] = None, timeout: Optional[float] = None
     ) -> RecvPacket:
+        if not self._meas:
+            raise NotConnectedError()
+
         recv_future: asyncio.Future[bytearray] = asyncio.Future()
 
-        def meas_callback(_sender: int, data: bytearray) -> None:
+        def meas_callback(_sender: Any, data: bytearray) -> None:
             recv_future.set_result(data)
 
         try:

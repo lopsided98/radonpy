@@ -191,7 +191,7 @@ async def run() -> None:
 
     args = parser.parse_args()
 
-    device_info: Optional[Union[BLEDevice, str]] = None
+    device_info: Optional[BLEDevice] = None
     if args.address is None:
         async for device_info in radonpy.RD200.discover(adapter=args.adapter):
             break
