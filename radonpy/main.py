@@ -63,7 +63,7 @@ async def run_influxdb(args: argparse.Namespace, device: radonpy.RD200) -> None:
                 " certificate authentication"
             )
             sys.exit(2)
-        ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        ssl_context = ssl.create_default_context()
         ssl_context.load_cert_chain(args.tls_certificate, args.tls_key)
         kwargs.update(connector=aiohttp.TCPConnector(ssl_context=ssl_context))
 
