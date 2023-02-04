@@ -9,7 +9,7 @@ buildPythonApplication rec {
 
   propagatedBuildInputs = [ aioinflux bleak ];
 
-  checkInputs = [ black flake8 mypy ];
+  nativeCheckInputs = [ black flake8 mypy ];
 
   preCheck = ''
     black --check .
