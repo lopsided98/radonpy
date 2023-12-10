@@ -22,15 +22,13 @@ _logger = logging.getLogger(__name__)
 async def run_measure(args: argparse.Namespace, device: radonpy.RD200) -> None:
     measurement = await device.measurement
     print(
-        json.dumps(
-            {
-                "current_value": measurement.read_value,
-                "day_value": measurement.day_value,
-                "month_value": measurement.month_value,
-                "pulse_count": measurement.pulse_count,
-                "pulse_count_10_min": measurement.pulse_count_10_min,
-            }
-        )
+        json.dumps({
+            "current_value": measurement.read_value,
+            "day_value": measurement.day_value,
+            "month_value": measurement.month_value,
+            "pulse_count": measurement.pulse_count,
+            "pulse_count_10_min": measurement.pulse_count_10_min,
+        })
     )
 
 
