@@ -22,13 +22,15 @@ _logger = logging.getLogger(__name__)
 async def run_measure(args: argparse.Namespace, device: radonpy.RD200) -> None:
     measurement = await device.measurement
     print(
-        json.dumps({
-            "current_value": measurement.read_value,
-            "day_value": measurement.day_value,
-            "month_value": measurement.month_value,
-            "pulse_count": measurement.pulse_count,
-            "pulse_count_10_min": measurement.pulse_count_10_min,
-        })
+        json.dumps(
+            {
+                "current_value": measurement.read_value,
+                "day_value": measurement.day_value,
+                "month_value": measurement.month_value,
+                "pulse_count": measurement.pulse_count,
+                "pulse_count_10_min": measurement.pulse_count_10_min,
+            }
+        )
     )
 
 
@@ -98,7 +100,7 @@ async def run_influxdb_import_log(
     now = datetime.datetime.now(tz=datetime.timezone.utc)
 
     def map_point(
-        item: Tuple[int, float]
+        item: Tuple[int, float],
     ) -> Mapping[str, Union[Mapping[str, float], Mapping[str, str], str, datetime.datetime]]:
         i, value = item
         delta = datetime.timedelta(hours=len(log) - i)
