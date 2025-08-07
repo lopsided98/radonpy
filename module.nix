@@ -4,7 +4,8 @@ with lib;
 
 let
   cfg = config.services.radonpy;
-in {
+in
+{
   options.services.radonpy = {
     enable = mkEnableOption "RadonEye data collection to InfluxDB";
 
@@ -37,7 +38,7 @@ in {
           "pulse_count"
           "pulse_count_10_min"
         ]);
-        default = [];
+        default = [ ];
         description = ''
           List of fields to exclude from the InfluxDB measurement
         '';
@@ -84,13 +85,15 @@ in {
 
   config = mkIf cfg.enable {
     assertions = [
-      { assertion = cfg.influxdb.tlsCertificate != null -> cfg.influxdb.tlsKey != null &&
-                    cfg.influxdb.tlsKey != null -> cfg.influxdb.tlsCertificate != null;
+      {
+        assertion = cfg.influxdb.tlsCertificate != null -> cfg.influxdb.tlsKey != null &&
+          cfg.influxdb.tlsKey != null -> cfg.influxdb.tlsCertificate != null;
         message = ''
           services.radonpy.influxdb.tlsCertificate and
           services.radonpy.influxdb.tlsKey must both be provided to enable
           client certificate authentication.
-        ''; }
+        '';
+      }
     ];
 
     users = {
@@ -98,7 +101,7 @@ in {
         isSystemUser = true;
         group = "radonpy";
       };
-      groups.radonpy = {};
+      groups.radonpy = { };
     };
 
     hardware.bluetooth.enable = true;
@@ -117,39 +120,49 @@ in {
       '';
     });
 
-    systemd.services.radonpy = let
-      radonpy = pkgs.python3Packages.callPackage ./. { };
-    in {
-      wantedBy = [ "multi-user.target" ];
-      after = [ "bluetooth.target" ];
-      serviceConfig = {
-        Type = "exec";
-        User = "radonpy";
-        Group = "radonpy";
-        Restart = "always";
-        RestartSec = 5;
-        ExecStart = lib.escapeShellArgs ([
-          "${radonpy}/bin/radonpy"
-        ] ++ lib.optionals (cfg.adapter != null) [
-          "--adapter" cfg.adapter
-        ] ++ lib.optionals (cfg.address != null) [
-          "--address" cfg.address
-        ] ++ [
-          "influxdb"
-          "--url" cfg.influxdb.url
-          "--database" cfg.influxdb.database
-          "--username" cfg.influxdb.username
-          "--password" cfg.influxdb.password
-        ] ++ lib.optionals (cfg.influxdb.tlsCertificate != null) [
-          "--tls-certificate" "${cfg.influxdb.tlsCertificate}"
-          "--tls-key" "${cfg.influxdb.tlsKey}"
-        ] ++ lib.concatMap (f: [ "--exclude-field" f ])
-          cfg.influxdb.excludeFields);
+    systemd.services.radonpy =
+      let
+        radonpy = pkgs.python3Packages.callPackage ./. { };
+      in
+      {
+        wantedBy = [ "multi-user.target" ];
+        after = [ "bluetooth.target" ];
+        serviceConfig = {
+          Type = "exec";
+          User = "radonpy";
+          Group = "radonpy";
+          Restart = "always";
+          RestartSec = 5;
+          ExecStart = lib.escapeShellArgs ([
+            "${radonpy}/bin/radonpy"
+          ] ++ lib.optionals (cfg.adapter != null) [
+            "--adapter"
+            cfg.adapter
+          ] ++ lib.optionals (cfg.address != null) [
+            "--address"
+            cfg.address
+          ] ++ [
+            "influxdb"
+            "--url"
+            cfg.influxdb.url
+            "--database"
+            cfg.influxdb.database
+            "--username"
+            cfg.influxdb.username
+            "--password"
+            cfg.influxdb.password
+          ] ++ lib.optionals (cfg.influxdb.tlsCertificate != null) [
+            "--tls-certificate"
+            "${cfg.influxdb.tlsCertificate}"
+            "--tls-key"
+            "${cfg.influxdb.tlsKey}"
+          ] ++ lib.concatMap (f: [ "--exclude-field" f ])
+            cfg.influxdb.excludeFields);
+        };
+        unitConfig = {
+          StartLimitBurst = 5;
+          StartLimitIntervalSec = 150;
+        };
       };
-      unitConfig = {
-        StartLimitBurst = 5;
-        StartLimitIntervalSec = 150;
-      };
-    };
   };
 }

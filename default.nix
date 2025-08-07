@@ -1,23 +1,32 @@
-{ lib, fetchFromGitHub, buildPythonApplication, black, flake8, mypy, aioinflux
-, bleak }:
+{ lib
+, fetchFromGitHub
+, buildPythonApplication
+, setuptools
+, aioinflux
+, bleak
+, black
+, flake8
+, mypy
+}:
 
-buildPythonApplication rec {
+buildPythonApplication {
   pname = "radonpy";
-  version = "0.2.3";
+  version = "0.2.4";
 
   src = ./.;
 
-  nativeBuildInputs = [ black flake8 mypy ];
-  propagatedBuildInputs = [ aioinflux bleak ];
+  pyproject = true;
+  build-system = [ setuptools ];
+  dependencies = [ aioinflux bleak ];
+  nativeCheckInputs = [ black flake8 mypy ];
 
-  postBuild = ''
+  preCheck = ''
     black --check .
     flake8
     mypy radonpy
   '';
 
-  # No tests
-  doCheck = false;
+  pythonImportsCheck = [ "radonpy" ];
 
   meta = with lib; {
     description = "Tools to communicate with the RadonEye RD200 radon detector";
