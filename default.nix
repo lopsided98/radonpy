@@ -1,12 +1,13 @@
-{ lib
-, fetchFromGitHub
-, buildPythonApplication
-, setuptools
-, aioinflux
-, bleak
-, black
-, flake8
-, mypy
+{
+  lib,
+  fetchFromGitHub,
+  buildPythonApplication,
+  setuptools,
+  aioinflux,
+  bleak,
+  black,
+  flake8,
+  mypy,
 }:
 
 buildPythonApplication {
@@ -17,8 +18,15 @@ buildPythonApplication {
 
   pyproject = true;
   build-system = [ setuptools ];
-  dependencies = [ aioinflux bleak ];
-  nativeCheckInputs = [ black flake8 mypy ];
+  dependencies = [
+    aioinflux
+    bleak
+  ];
+  nativeCheckInputs = [
+    black
+    flake8
+    mypy
+  ];
 
   preCheck = ''
     black --check .

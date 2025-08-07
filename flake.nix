@@ -6,26 +6,33 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils, }:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
     with flake-utils.lib;
-    eachSystem allSystems
-      (system:
-        let
-          pkgs = nixpkgs.legacyPackages.${system};
-        in
-        {
-          defaultPackage = pkgs.python3Packages.callPackage ./. { };
+    eachSystem allSystems (
+      system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in
+      {
+        defaultPackage = pkgs.python3Packages.callPackage ./. { };
 
-          defaultApp = {
-            type = "app";
-            program = "${self.defaultPackage.${system}}/bin/radonpy";
-          };
+        defaultApp = {
+          type = "app";
+          program = "${self.defaultPackage.${system}}/bin/radonpy";
+        };
 
-          devShell = self.defaultPackage.${system};
-        }) //
-    eachSystem [ "x86_64-linux" ] (system: {
+        devShell = self.defaultPackage.${system};
+      }
+    )
+    // eachSystem [ "x86_64-linux" ] (system: {
       hydraJobs.build = self.defaultPackage.${system};
-    }) // {
+    })
+    // {
       overlay = import ./pkgs;
       nixosModule = import ./module.nix;
     };
