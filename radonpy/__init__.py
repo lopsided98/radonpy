@@ -423,11 +423,11 @@ class RD200:
         """Indicate whether the remote device is currently connected."""
         return self.device.is_connected
 
-    async def connect(self) -> bool:
+    async def connect(self, timeout: float = 30) -> bool:
         """
         Connect to the RadonEye device.
         """
-        await self.device.connect()
+        await self.device.connect(timeout=timeout)
 
         service = self.device.services.get_service(self.LBS_UUID_SERVICE)
         if not service:
