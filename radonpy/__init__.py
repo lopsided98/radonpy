@@ -50,7 +50,7 @@ class Unit(IntEnum):
     PCI_L = 0
     """pCi/L"""
 
-    BQ_M3 = (1,)
+    BQ_M3 = 1
     """Bq/m^3"""
 
 
@@ -332,10 +332,10 @@ class LogInfo(RecvPacket):
     data_no: int
     checksum: int
 
-    @staticmethod
-    def unpack(data: bytes) -> LogInfo:
+    @classmethod
+    def unpack(cls, data: bytes) -> LogInfo:
         # Unknown extra data at the end
-        return LogInfo(*struct.unpack("<Hb", data[:3]))
+        return cls(*struct.unpack("<Hb", data[:3]))
 
 
 _register_packet(LogInfo)
@@ -378,8 +378,8 @@ class RD200:
         exc_type: Optional[Type[BaseException]],
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
-    ) -> bool:
-        return await self.disconnect()
+    ) -> None:
+        await self.disconnect()
 
     @classmethod
     async def discover(
@@ -393,9 +393,7 @@ class RD200:
         device_queue: asyncio.Queue[BLEDevice] = asyncio.Queue()
 
         def detection_callback(d: BLEDevice, ad: Optional[AdvertisementData]) -> None:
-            if "uuids" in d.metadata:
-                uuids = d.metadata["uuids"]
-            elif ad is not None:
+            if ad is not None:
                 uuids = ad.service_uuids
             else:
                 return
@@ -429,8 +427,7 @@ class RD200:
         """
         Connect to the RadonEye device.
         """
-        if not await self.device.connect():
-            return False
+        await self.device.connect()
 
         service = self.device.services.get_service(self.LBS_UUID_SERVICE)
         if not service:
@@ -445,14 +442,14 @@ class RD200:
             return False
         return True
 
-    async def disconnect(self) -> bool:
+    async def disconnect(self) -> None:
         """
         Disconnect from the RadonEye device.
         """
         self._ctl = None
         self._meas = None
         self._log = None
-        return await self.device.disconnect()
+        await self.device.disconnect()
 
     @property
     async def measurement(self) -> Measurement:
