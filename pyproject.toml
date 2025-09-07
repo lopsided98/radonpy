@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "radonpy"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
   "aioinflux",
   "bleak>=1.0.0",
